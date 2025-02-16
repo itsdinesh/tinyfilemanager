@@ -2208,7 +2208,7 @@ $all_files_size = 0;
                         error_log("exception:" . $e->getMessage());
                     }
                 }
-                $all_files_size += calculate_directory_size($path);
+                $all_files_size += calculate_directory_size($path . '/' . $f);
             ?>
                 <tr>
                     <?php if (!FM_READONLY): ?>
