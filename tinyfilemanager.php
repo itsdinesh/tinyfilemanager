@@ -205,6 +205,23 @@ $lang_list = array(
     'en' => 'English'
 );
 
+function calculate_directory_size($path) {
+    try {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+        
+        return array_sum(array_map(function ($file) {
+            return $file->isFile() ? $file->getSize() : 0;
+        }, iterator_to_array($iterator)));
+        
+    } catch (UnexpectedValueException $e) {
+        // Handle cases where directory is not readable or doesn't exist
+        return 0;
+    }
+}
+
 if ($report_errors == true) {
     @ini_set('error_reporting', E_ALL);
     @ini_set('display_errors', 1);
@@ -2171,7 +2188,7 @@ $all_files_size = 0;
                 $filesize_raw = "";
                 $filesize = lng('Folder');
                 $perms = substr(decoct(fileperms($path . '/' . $f)), -4);
-                $owner = array('name' => '?'); 
+                $owner = array('name' => '?');
                 $group = array('name' => '?');
                 if (function_exists('posix_getpwuid') && function_exists('posix_getgrgid')) {
                     try {
@@ -2191,6 +2208,7 @@ $all_files_size = 0;
                         error_log("exception:" . $e->getMessage());
                     }
                 }
+                $all_files_size += calculate_directory_size($path);
             ?>
                 <tr>
                     <?php if (!FM_READONLY): ?>
@@ -2243,7 +2261,7 @@ $all_files_size = 0;
                 $filelink = '?p=' . urlencode(FM_PATH) . '&amp;view=' . urlencode($f);
                 $all_files_size += $filesize_raw;
                 $perms = substr(decoct(fileperms($path . '/' . $f)), -4);
-                $owner = array('name' => '?'); 
+                $owner = array('name' => '?');
                 $group = array('name' => '?');
                 if (function_exists('posix_getpwuid') && function_exists('posix_getgrgid')) {
                     try {
@@ -2343,7 +2361,7 @@ $all_files_size = 0;
                                 if ($show_disk_usage) {
                                 echo lng('UsedSpace').': <span class="badge text-bg-light border-radius-0">' .$total_used_size.'</span>';
                                 echo lng('RemainingSpace').': <span class="badge text-bg-light border-radius-0">' .$free_size.'</span>';
-                                } 
+                                }
                             ?>
                             <?php echo lng('File').': <span class="badge text-bg-light border-radius-0">'.$num_files.'</span>' ?>
                             <?php echo lng('Folder').': <span class="badge text-bg-light border-radius-0">'.$num_folders.'</span>' ?>
@@ -5543,11 +5561,11 @@ function fm_show_header_login()
     $tr['en']['NormalEditor']   = 'Normal Editor';          $tr['en']['BackUp']             = 'Back Up';
     $tr['en']['SourceFolder']   = 'Source Folder';          $tr['en']['Files']              = 'Files';
     $tr['en']['Move']           = 'Move';                   $tr['en']['Change']             = 'Change';
-    $tr['en']['Settings']       = 'Settings';               $tr['en']['Language']           = 'Language';        
+    $tr['en']['Settings']       = 'Settings';               $tr['en']['Language']           = 'Language';
     $tr['en']['ErrorReporting'] = 'Error Reporting';        $tr['en']['ShowHiddenFiles']    = 'Show Hidden Files';
     $tr['en']['Help']           = 'Help';                   $tr['en']['Created']            = 'Created';
     $tr['en']['Help Documents'] = 'Help Documents';         $tr['en']['Report Issue']       = 'Report Issue';
-    $tr['en']['Generate']       = 'Generate';               $tr['en']['FullSize']           = 'Full Size';              
+    $tr['en']['Generate']       = 'Generate';               $tr['en']['FullSize']           = 'Full Size';
     $tr['en']['HideColumns']    = 'Hide Perms/Owner columns';$tr['en']['You are logged in'] = 'You are logged in';
     $tr['en']['Nothing selected']   = 'Nothing selected';   $tr['en']['Paths must be not equal']    = 'Paths must be not equal';
     $tr['en']['Renamed from']       = 'Renamed from';       $tr['en']['Archive not unpacked']       = 'Archive not unpacked';
