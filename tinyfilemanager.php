@@ -1,6 +1,6 @@
 <?php
 //Default Configuration
-$CONFIG = '{"lang":"en","error_reporting":false,"show_hidden":false,"hide_Cols":false,"theme":"light","show_disk_usage":true}';
+$CONFIG = '{"lang":"en","error_reporting":false,"show_hidden":false,"hide_Cols":false,"theme":"light","show_disk_usage":true,"use_custom_capacity":false,"storage_capacity":500}';
 
 /**
  * H3K ~ Tiny File Manager V2.6
@@ -26,8 +26,8 @@ $use_auth = true;
 // Users: array('Username' => 'Password', 'Username2' => 'Password2', ...)
 // Generate secure password hash - https://tinyfilemanager.github.io/docs/pwd.html
 $auth_users = array(
-    'admin' => '$2y$10$/K.hjNr84lLNDt8fTXjoI.DBp6PpeyoJ.mGwrrLuCZfAwfSAGqhOW', //admin@123
-    'user' => '$2y$10$Fg6Dz8oH9fPoZ2jJan5tZuv6Z4Kp7avtQ9bDfrdRntXtPeiMAZyGO' //12345
+  'admin' => '$2y$10$/K.hjNr84lLNDt8fTXjoI.DBp6PpeyoJ.mGwrrLuCZfAwfSAGqhOW', //admin@123
+  'user' => '$2y$10$Fg6Dz8oH9fPoZ2jJan5tZuv6Z4Kp7avtQ9bDfrdRntXtPeiMAZyGO' //12345
 );
 
 // Readonly users
@@ -197,6 +197,10 @@ $hide_Cols = isset($cfg->data['hide_Cols']) ? $cfg->data['hide_Cols'] : true;
 $theme = isset($cfg->data['theme']) ? $cfg->data['theme'] : 'light';
 
 $show_disk_usage = isset($cfg->data['show_disk_usage']) ? $cfg->data['show_disk_usage'] : true;
+
+// Custom storage settings
+$use_custom_capacity = isset($cfg->data['use_custom_capacity']) ? $cfg->data['use_custom_capacity'] : false;
+$storage_capacity = isset($cfg->data['storage_capacity']) ? intval($cfg->data['storage_capacity']) : 500;
 
 define('FM_THEME', $theme);
 
@@ -564,7 +568,9 @@ if ((isset($_SESSION[FM_SESSION_ID]['logged'], $auth_users[$_SESSION[FM_SESSION_
         $hco = isset($_POST['js-hide-cols']) && $_POST['js-hide-cols'] == "true" ? true : false;
         $sdu = isset($_POST['js-show-usage']) && $_POST['js-show-usage'] == "true" ? true : false;
         $te3 = $_POST['js-theme-3'];
-
+        $use_custom_capacity_post = isset($_POST['js-use-custom-capacity']) && $_POST['js-use-custom-capacity'] === 'true';
+        $storage_capacity_post = max(0, intval($_POST['js-storage-capacity'] ?? 500));
+        
         if ($cfg->data['lang'] != $newLng) {
             $cfg->data['lang'] = $newLng;
             $lang = $newLng;
@@ -592,6 +598,15 @@ if ((isset($_SESSION[FM_SESSION_ID]['logged'], $auth_users[$_SESSION[FM_SESSION_
         if ($cfg->data['theme'] != $te3) {
             $cfg->data['theme'] = $te3;
             $theme = $te3;
+        }
+        if ($cfg->data['use_custom_capacity'] != $use_custom_capacity_post) {
+          $cfg->data['use_custom_capacity'] = $use_custom_capacity_post;
+          $use_custom_capacity = $use_custom_capacity_post;
+        }
+        
+        if ($cfg->data['storage_capacity'] != $storage_capacity_post) {
+            $cfg->data['storage_capacity'] = $storage_capacity_post;
+            $storage_capacity = $storage_capacity_post;
         }
         $cfg->save();
         echo true;
@@ -1668,6 +1683,26 @@ if (isset($_GET['settings']) && !FM_READONLY) {
                         </div>
                     </div>
 
+                    <div class="mt-3 mb-3 row">
+                        <label for="js-use-custom-capacity" class="col-sm-3 col-form-label"><?php echo lng('UseCustomCapacity') ?></label>
+                        <div class="col-sm-9">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="js-use-custom-capacity" 
+                                      name="js-use-custom-capacity" value="true" 
+                                      <?php echo $use_custom_capacity ? 'checked' : ''; ?> 
+                                      onchange="document.getElementById('js-storage-capacity-row').style.display = this.checked ? 'flex' : 'none';" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 mb-3 row" id="js-storage-capacity-row" style="<?php echo $use_custom_capacity ? '' : 'display: none;'; ?>">
+                        <label for="js-storage-capacity" class="col-sm-3 col-form-label"><?php echo lng('StorageCapacity') ?> (GB)</label>
+                        <div class="col-sm-5">
+                            <input type="number" class="form-control" id="js-storage-capacity" name="js-storage-capacity" 
+                                  value="<?php echo $storage_capacity; ?>">
+                        </div>
+                    </div>
+
                     <div class="mb-3 row">
                         <div class="col-sm-10">
                             <button type="submit" class="btn btn-success"> <i class="fa fa-check-circle"></i> <?php echo lng('Save'); ?></button>
@@ -2329,38 +2364,41 @@ $all_files_size = 0;
                 $ik++;
             }
 
-            if (empty($folders) && empty($files)) { ?>
-                <tfoot>
-                    <tr><?php if (!FM_READONLY): ?>
-                            <td></td><?php endif; ?>
-                        <td colspan="<?php echo (!FM_IS_WIN && !$hide_Cols) ? '6' : '4' ?>"><em><?php echo lng('Folder is empty') ?></em></td>
-                    </tr>
-                </tfoot>
-            <?php
-            } else { ?>
-
-            <?php
-            // Check if show_disk_usage is true before getting disk size
-                if ($show_disk_usage) {
-                // Get total and free space
-                $total = disk_total_space(FM_ROOT_PATH.'/'.FM_PATH);
-                $free = disk_free_space(FM_ROOT_PATH.'/'.FM_PATH);
-
-                // Format sizes
-                $total_size = fm_get_filesize($total);
-                $free_size = fm_get_filesize($free);
-                $total_used_size = fm_get_filesize($total - $free);
-                }
-            ?>
-                <tfoot>
+                if (empty($folders) && empty($files)) { ?>
+                    <tfoot>
+                        <tr><?php if (!FM_READONLY): ?>
+                                <td></td><?php endif; ?>
+                            <td colspan="<?php echo (!FM_IS_WIN && !$hide_Cols) ? '6' : '4' ?>"><em><?php echo lng('Folder is empty') ?></em></td>
+                        </tr>
+                    </tfoot>
+                <?php
+                } else { ?>
+                    <tfoot>
                     <tr>
                         <td class="gray" colspan="<?php echo (!FM_IS_WIN && !$hide_Cols) ? (FM_READONLY ? '6' :'7') : (FM_READONLY ? '4' : '5') ?>">
-                            <?php echo lng('FullSize').': <span class="badge text-bg-light border-radius-0">'.fm_get_filesize($all_files_size).'</span>' ?>
+                            <?php echo lng('FolderSize').': <span class="badge text-bg-light border-radius-0">'.fm_get_filesize($all_files_size).'</span>' ?>
                             <?php
                                 // Check if show_disk_usage is true before displaying disk usage
                                 if ($show_disk_usage) {
-                                echo lng('UsedSpace').': <span class="badge text-bg-light border-radius-0">' .$total_used_size.'</span>';
-                                echo lng('RemainingSpace').': <span class="badge text-bg-light border-radius-0">' .$free_size.'</span>';
+                                  if ($use_custom_capacity) {
+                                      // Calculate based on user-defined capacity
+                                      $used_space_bytes = calculate_directory_size(FM_ROOT_PATH);                                      
+                                      $used_space_gb = $used_space_bytes / (1024 * 1024 * 1024);
+                                      $remaining_space_gb = $storage_capacity - $used_space_gb;
+                                      
+                                      // Format for display
+                                      $remaining_space_formatted = number_format($remaining_space_gb, 2) . ' GB';
+                                      $used_space_formatted = fm_get_filesize($used_space_bytes);
+                                      echo lng('UsedSpace') . ': <span class="badge text-bg-light border-radius-0">' . $used_space_formatted . '</span> ';
+                                      echo lng('RemainingSpace') . ': <span class="badge text-bg-light border-radius-0">' . $remaining_space_formatted . '</span>';
+                                  } else {
+                                      // Original code
+                                      $free = disk_free_space(FM_ROOT_PATH.'/'.FM_PATH);
+                                      $used = disk_total_space(FM_ROOT_PATH.'/'.FM_PATH) - $free;
+                                      $free_size = fm_get_filesize($free);
+                                      $used_size = fm_get_filesize($used);
+                                      echo lng('UsedSpace') . ': <span class="badge text-bg-light border-radius-0">' . $used_size . '</span> ';
+                                      echo lng('RemainingSpace') . ': <span class="badge text-bg-light border-radius-0">' . $free_size . '</span>';                                  }
                                 }
                             ?>
                             <?php echo lng('File').': <span class="badge text-bg-light border-radius-0">'.$num_files.'</span>' ?>
@@ -5566,7 +5604,7 @@ function fm_show_header_login()
     $tr['en']['ErrorReporting'] = 'Error Reporting';        $tr['en']['ShowHiddenFiles']    = 'Show Hidden Files';
     $tr['en']['Help']           = 'Help';                   $tr['en']['Created']            = 'Created';
     $tr['en']['Help Documents'] = 'Help Documents';         $tr['en']['Report Issue']       = 'Report Issue';
-    $tr['en']['Generate']       = 'Generate';               $tr['en']['FullSize']           = 'Full Size';
+    $tr['en']['Generate']       = 'Generate';               $tr['en']['FolderSize']           = 'Folder Size';
     $tr['en']['HideColumns']    = 'Hide Perms/Owner columns';$tr['en']['You are logged in'] = 'You are logged in';
     $tr['en']['Nothing selected']   = 'Nothing selected';   $tr['en']['Paths must be not equal']    = 'Paths must be not equal';
     $tr['en']['Renamed from']       = 'Renamed from';       $tr['en']['Archive not unpacked']       = 'Archive not unpacked';
@@ -5603,6 +5641,8 @@ function fm_show_header_login()
     $tr['en']['RemainingSpace']                                 = 'Remaining Space';
     $tr['en']['UsedSpace']                                      = 'Used Space';
     $tr['en']['ShowDiskUsage']                                  = 'Show Disk Usage';
+    $tr['en']['UseCustomCapacity']                              = 'Use custom storage capacity';
+    $tr['en']['StorageCapacity']                                = 'Storage Capacity';
 
         $i18n = fm_get_translations($tr);
         $tr = $i18n ? $i18n : $tr;
