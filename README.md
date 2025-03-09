@@ -10,7 +10,7 @@
 This fork merges the latest changes with the disk usage PR from hppanpaliya.
 https://github.com/prasathmani/tinyfilemanager/pull/1100
 
-It also includes personal changes to how the 'full size' is calculated, it is now based on the total size of a directory, which includes individual files and files within subfolders.
+It also includes personal changes to how the 'full size' is calculated, it is now based on the total size of a directory, which includes individual files and files within subfolders. Now, includes a custom storage capacity setting to allow user to define their total storage capacity instead of relying system defaults (useful for shared hosting).
 
 > TinyFileManager is a versatile web-based PHP file manager designed for simplicity and efficiency. This lightweight single-file PHP application can be effortlessly integrated into any server directory, allowing users to store, upload, edit, and manage files and folders directly through their web browser.
 With multi-language support and compatibility with PHP 5.5+, TinyFileManager enables the creation of individual user accounts, each with its dedicated directory. The platform also includes built-in functionality for handling text files using the Cloud9 IDE.
