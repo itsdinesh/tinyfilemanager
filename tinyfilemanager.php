@@ -280,7 +280,7 @@ if (empty($auth_users)) {
     $use_auth = false;
 }
 
-$is_https = isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1)
+$is_https = isset($_SERVER['HTTPS']) && (strtolower($_SERVER['HTTPS']) == 'on' || $_SERVER['HTTPS'] == 1)
     || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https';
 
 // update $root_url based on user specific directories
@@ -3394,7 +3394,7 @@ function fm_get_file_mimes($extension)
     $fileTypes['divx'] = 'video/x-msvideo';
 
     $fileTypes['mp3'] = 'audio/mpeg';
-    $fileTypes['mp4'] = 'audio/mpeg';
+    $fileTypes['mp4'] = 'video/mp4';
     $fileTypes['mpeg'] = 'video/mpeg';
     $fileTypes['mpg'] = 'video/mpeg';
     $fileTypes['mpe'] = 'video/mpeg';
