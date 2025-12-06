@@ -1,26 +1,19 @@
 <?php
 //Default Configuration
-$CONFIG = '{"lang":"en","error_reporting":false,"show_hidden":false,"hide_Cols":false,"theme":"light","show_disk_usage":true,"use_custom_capacity":false,"storage_capacity":500}';
+$CONFIG = '{"lang":"en","error_reporting":false,"show_hidden":false,"hide_Cols":false,"theme":"dark","show_disk_usage":true,"use_custom_capacity":false,"storage_capacity":500}';
 
-/**
- * H3K ~ Tiny File Manager V2.6
- * @author CCP Programmers
- * @github https://github.com/prasathmani/tinyfilemanager
- * @link https://tinyfilemanager.github.io
- */
-
-//TFM version
-define('VERSION', '2.6');
+//Version
+define('VERSION', '3.0');
 
 //Application Title
-define('APP_TITLE', 'Tiny File Manager');
+define('APP_TITLE', 'Manager');
 
 // --- EDIT BELOW CONFIGURATION CAREFULLY ---
 
 // Auth with login/password
 // set true/false to enable/disable it
 // Is independent from IP white- and blacklisting
-$use_auth = true;
+$use_auth = false;
 
 // Login user name and password
 // Users: array('Username' => 'Password', 'Username2' => 'Password2', ...)
@@ -194,7 +187,7 @@ $report_errors = isset($cfg->data['error_reporting']) ? $cfg->data['error_report
 $hide_Cols = isset($cfg->data['hide_Cols']) ? $cfg->data['hide_Cols'] : true;
 
 // Theme
-$theme = isset($cfg->data['theme']) ? $cfg->data['theme'] : 'light';
+$theme = isset($cfg->data['theme']) ? $cfg->data['theme'] : 'dark';
 
 $show_disk_usage = isset($cfg->data['show_disk_usage']) ? $cfg->data['show_disk_usage'] : true;
 
@@ -380,12 +373,10 @@ if ($use_auth) {
                                 <form class="form-signin" action="" method="post" autocomplete="off">
                                     <div class="mb-3">
                                         <div class="brand">
-                                            <svg version="1.0" xmlns="http://www.w3.org/2000/svg" M1008 width="100%" height="80px" viewBox="0 0 238.000000 140.000000" aria-label="H3K Tiny File Manager">
-                                                <g transform="translate(0.000000,140.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
-                                                    <path d="M160 700 l0 -600 110 0 110 0 0 260 0 260 70 0 70 0 0 -260 0 -260 110 0 110 0 0 600 0 600 -110 0 -110 0 0 -260 0 -260 -70 0 -70 0 0 260 0 260 -110 0 -110 0 0 -600z" />
-                                                    <path fill="#003500" d="M1008 1227 l-108 -72 0 -117 0 -118 110 0 110 0 0 110 0 110 70 0 70 0 0 -180 0 -180 -125 0 c-69 0 -125 -3 -125 -6 0 -3 23 -39 52 -80 l52 -74 73 0 73 0 0 -185 0 -185 -70 0 -70 0 0 115 0 115 -110 0 -110 0 0 -190 0 -190 181 0 181 0 109 73 108 72 1 181 0 181 -69 48 -68 49 68 50 69 49 0 249 0 248 -182 -1 -183 0 -107 -72z" />
-                                                    <path d="M1640 700 l0 -600 110 0 110 0 0 208 0 208 35 34 35 34 35 -34 35 -34 0 -208 0 -208 110 0 110 0 0 212 0 213 -87 87 -88 88 88 88 87 87 0 213 0 212 -110 0 -110 0 0 -208 0 -208 -70 -69 -70 -69 0 277 0 277 -110 0 -110 0 0 -600z" />
-                                                </g>
+                                            <!-- Generic Icon -->
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="80px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                                <polyline points="14 2 14 8 20 8"></polyline>
                                             </svg>
                                         </div>
                                         <div class="text-center">
@@ -417,7 +408,7 @@ if ($use_auth) {
                         </div>
                         <div class="footer text-center">
                             &mdash;&mdash; &copy;
-                            <a href="https://tinyfilemanager.github.io/" target="_blank" class="text-decoration-none text-muted" data-version="<?php echo VERSION; ?>">CCP Programmers</a> &mdash;&mdash;
+                            <span class="text-decoration-none text-muted" data-version="<?php echo VERSION; ?>">Manager</span> &mdash;&mdash;
                         </div>
                     </div>
                 </div>
@@ -976,6 +967,41 @@ if (isset($_GET['dl'], $_POST['token'])) {
         fm_set_msg(lng('File not found'), 'error');
         $FM_PATH = FM_PATH;
         fm_redirect(FM_SELF_URL . '?p=' . urlencode($FM_PATH));
+    }
+}
+
+
+
+// Stream
+if (isset($_GET['stream'])) {
+    // Clean the stream file path
+    $stream = urldecode($_GET['stream']);
+    $stream = fm_clean_path($stream);
+    $stream = str_replace('/', '', $stream); // Prevent directory traversal attacks
+
+    // Define the file path
+    $path = FM_ROOT_PATH;
+    if (FM_PATH != '') {
+        $path .= '/' . FM_PATH;
+    }
+
+    // Check if the file exists and is valid
+    if ($stream != '' && is_file($path . '/' . $stream)) {
+        // Close the session to prevent session locking
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+
+        // Clear output buffer to remove any previous output (e.g. whitespace)
+        while (ob_get_level()) ob_end_clean();
+
+        // Call the download function with inline disposition
+        fm_download_file($path . '/' . $stream, $stream, 1024, 'inline');
+        exit;
+    } else {
+        // Handle the case where the file is not found
+        header("HTTP/1.0 404 Not Found");
+        exit;
     }
 }
 
@@ -1735,16 +1761,14 @@ if (isset($_GET['help'])) {
                 <div class="row">
                     <div class="col-xs-12 col-sm-6">
                         <p>
-                        <h3><a href="https://github.com/prasathmani/tinyfilemanager" target="_blank" class="app-v-title"> Tiny File Manager <?php echo VERSION; ?></a></h3>
+                        <h3><span class="app-v-title"> Manager <?php echo VERSION; ?></span></h3>
                         </p>
-                        <p>Author: PRAŚATH MANİ</p>
-                        <p>Mail Us: <a href="mailto:ccpprogrammers@gmail.com">ccpprogrammers [at] gmail [dot] com</a> </p>
                     </div>
                     <div class="col-xs-12 col-sm-6">
                         <div class="card">
                             <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><a href="https://github.com/prasathmani/tinyfilemanager/wiki" target="_blank"><i class="fa fa-question-circle"></i> <?php echo lng('Help Documents') ?> </a> </li>
-                                <li class="list-group-item"><a href="https://github.com/prasathmani/tinyfilemanager/issues" target="_blank"><i class="fa fa-bug"></i> <?php echo lng('Report Issue') ?></a></li>
+                                <li class="list-group-item"><i class="fa fa-question-circle"></i> <?php echo lng('Help Documents') ?> </li>
+                                <li class="list-group-item"><i class="fa fa-bug"></i> <?php echo lng('Report Issue') ?></li>
                                 <?php if (!FM_READONLY) { ?>
                                     <li class="list-group-item"><a href="javascript:show_new_pwd();"><i class="fa fa-lock"></i> <?php echo lng('Generate new password hash') ?></a></li>
                                 <?php } ?>
@@ -1833,8 +1857,8 @@ if (isset($_GET['view'])) {
 
 ?>
     <div class="row">
-        <div class="col-12">
-            <ul class="list-group w-50 my-3" data-bs-theme="<?php echo FM_THEME; ?>">
+        <div class="<?php echo ($is_video) ? 'col-md-4 order-md-1' : 'col-12'; ?>">
+            <ul class="list-group w-100 my-3" data-bs-theme="<?php echo FM_THEME; ?>">
                 <li class="list-group-item active" aria-current="true"><strong><?php echo lng($view_title) ?>:</strong> <?php echo fm_enc(fm_convert_win($file)) ?></li>
                 <?php $display_path = fm_get_display_path($file_path); ?>
                 <li class="list-group-item"><strong><?php echo $display_path['label']; ?>:</strong> <?php echo $display_path['path']; ?></li>
@@ -1916,7 +1940,8 @@ if (isset($_GET['view'])) {
                 <?php } ?>
                 <a class="fw-bold btn btn-outline-primary" href="?p=<?php echo urlencode(FM_PATH) ?>"><i class="fa fa-chevron-circle-left go-back"></i> <?php echo lng('Back') ?></a>
             </div>
-            <div class="row mt-3">
+        </div>
+        <div class="<?php echo ($is_video) ? 'col-md-8 order-md-2' : 'col-12'; ?>">
                 <?php
                 if ($is_onlineViewer) {
                     if ($online_viewer == 'google') {
@@ -1949,7 +1974,7 @@ if (isset($_GET['view'])) {
                     echo '<p><audio src="' . fm_enc($file_url) . '" controls preload="metadata"></audio></p>';
                 } elseif ($is_video) {
                     // Video content
-                    echo '<div class="preview-video"><video src="' . fm_enc($file_url) . '" width="640" height="360" controls preload="metadata"></video></div>';
+                    echo '<div class="preview-video mt-3" style="margin: 0;"><video id="player" src="' . FM_SELF_URL . '?p=' . urlencode(FM_PATH) . '&stream=' . urlencode($file) . '" controls playsinline preload="auto"></video></div>';
                 } elseif ($is_text) {
                     if (FM_USE_HIGHLIGHTJS) {
                         // highlight
@@ -2427,9 +2452,9 @@ $all_files_size = 0;
                     <a href="javascript:document.getElementById('a-copy').click();" class="btn btn-small btn-outline-primary btn-2"><i class="fa fa-files-o"></i> <?php echo lng('Copy') ?> </a>
                 </div>
             </div>
-            <div class="col-3 d-none d-sm-block"><a href="https://tinyfilemanager.github.io" target="_blank" class="float-right text-muted">Tiny File Manager <?php echo VERSION; ?></a></div>
+            <div class="col-3 d-none d-sm-block"><span class="float-right text-muted">Manager <?php echo VERSION; ?></span></div>
         <?php else: ?>
-            <div class="col-12"><a href="https://tinyfilemanager.github.io" target="_blank" class="float-right text-muted">Tiny File Manager <?php echo VERSION; ?></a></div>
+            <div class="col-12"><span class="float-right text-muted">Manager <?php echo VERSION; ?></span></div>
         <?php endif; ?>
     </div>
 </form>
@@ -3232,7 +3257,6 @@ function fm_get_text_exts()
         'ftpquota',
         'sql',
         'js',
-        'ts',
         'jsx',
         'tsx',
         'mjs',
@@ -3404,6 +3428,9 @@ function fm_get_file_mimes($extension)
     $fileTypes['m4a'] = 'video/quicktime';
     $fileTypes['aac'] = 'video/quicktime';
     $fileTypes['m3u'] = 'video/quicktime';
+    $fileTypes['mkv'] = 'video/x-matroska';
+    $fileTypes['webm'] = 'video/webm';
+    $fileTypes['ts'] = 'video/mp2t';
 
     $fileTypes['php'] = ['application/x-php'];
     $fileTypes['html'] = ['text/html'];
@@ -3451,7 +3478,7 @@ function scan($dir = '', $filter = '')
  * instead of download prompt
  * https://stackoverflow.com/a/13821992/1164642
  */
-function fm_download_file($fileLocation, $fileName, $chunkSize  = 1024)
+function fm_download_file($fileLocation, $fileName, $chunkSize  = 1024, $contentDisposition = 'attachment')
 {
     if (connection_status() != 0)
         return (false);
@@ -3483,15 +3510,13 @@ function fm_download_file($fileLocation, $fileName, $chunkSize  = 1024)
         return (false);
     }
 
-    // headers
     header('Content-Description: File Transfer');
     header('Expires: 0');
     header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
     header('Pragma: public');
     header("Content-Transfer-Encoding: binary");
     header("Content-Type: $contentType");
-
-    $contentDisposition = 'attachment';
+    header("Accept-Ranges: bytes");
 
     if (strstr($_SERVER['HTTP_USER_AGENT'], "MSIE")) {
         $fileName = preg_replace('/\./', '%2e', $fileName, substr_count($fileName, '.') - 1);
@@ -3500,25 +3525,52 @@ function fm_download_file($fileLocation, $fileName, $chunkSize  = 1024)
         header("Content-Disposition: $contentDisposition;filename=\"$fileName\"");
     }
 
-    header("Accept-Ranges: bytes");
-    $range = 0;
+    $begin = 0;
+    $end = $size - 1;
 
     if (isset($_SERVER['HTTP_RANGE'])) {
-        list($a, $range) = explode("=", $_SERVER['HTTP_RANGE']);
-        str_replace($range, "-", $range);
-        $size2 = $size - 1;
-        $new_length = $size - $range;
-        header("HTTP/1.1 206 Partial Content");
-        header("Content-Length: $new_length");
-        header("Content-Range: bytes $range$size2/$size");
+        $range = $_SERVER['HTTP_RANGE'];
+        $range = str_replace('bytes=', '', $range);
+        $range_parts = explode('-', $range);
+        
+        if (count($range_parts) == 2) {
+            if ($range_parts[0] === '') {
+                // Suffix range: bytes=-500 (Last 500 bytes)
+                $suffix = intval($range_parts[1]);
+                $begin = $size - $suffix;
+                $end = $size - 1;
+            } else {
+                // Start- range or Start-End range
+                $begin = intval($range_parts[0]);
+                if ($range_parts[1] !== '') {
+                    $end = intval($range_parts[1]);
+                }
+            }
+        }
+        
+        // Sanity checks
+        if ($begin < 0) $begin = 0;
+        if ($end >= $size) $end = $size - 1;
+        if ($begin > $end) $begin = $end;
+
+        header('HTTP/1.1 206 Partial Content');
+        header("Content-Range: bytes $begin-$end/$size");
     } else {
-        $size2 = $size - 1;
-        header("Content-Range: bytes 0-$size2/$size");
-        header("Content-Length: " . $size);
+        header('HTTP/1.1 200 OK');
     }
-    $fileLocation = realpath($fileLocation);
+
+    header("Content-Length: " . ($end - $begin + 1));
+
     while (ob_get_level()) ob_end_clean();
-    readfile($fileLocation);
+    set_time_limit(0);
+    fseek($fp, $begin);
+    while (!feof($fp) && ($p = ftell($fp)) <= $end) {
+        if ($p + $chunkSize > $end) {
+            $chunkSize = $end - $p + 1;
+        }
+        echo fread($fp, $chunkSize);
+        flush();
+    }
 
     fclose($fp);
 
@@ -3758,7 +3810,7 @@ class FM_Config
         if (strlen($CONFIG)) {
             $data = fm_object_to_array(json_decode($CONFIG));
         } else {
-            $msg = 'Tiny File Manager<br>Error: Cannot load configuration';
+            $msg = 'Manager<br>Error: Cannot load configuration';
             if (substr($fm_url, -1) == '/') {
                 $fm_url = rtrim($fm_url, '/');
                 $msg .= '<br>';
@@ -3911,8 +3963,7 @@ function fm_show_header_login()
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <meta name="description" content="Web based File Manager in PHP, Manage your files efficiently and easily with Tiny File Manager">
-        <meta name="author" content="CCP Programmers">
+
         <meta name="robots" content="noindex, nofollow">
         <meta name="googlebot" content="noindex">
         <?php if ($favicon_path) {
@@ -3923,10 +3974,9 @@ function fm_show_header_login()
         <?php print_external('css-bootstrap'); ?>
         <style>
             body.fm-login-page {
-                background-color: #f7f9fb;
+                background-color: #0d1117;
                 font-size: 14px;
-                background-color: #f7f9fb;
-                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 304 304' width='304' height='304'%3E%3Cpath fill='%23e2e9f1' fill-opacity='0.4' d='M44.1 224a5 5 0 1 1 0 2H0v-2h44.1zm160 48a5 5 0 1 1 0 2H82v-2h122.1zm57.8-46a5 5 0 1 1 0-2H304v2h-42.1zm0 16a5 5 0 1 1 0-2H304v2h-42.1zm6.2-114a5 5 0 1 1 0 2h-86.2a5 5 0 1 1 0-2h86.2zm-256-48a5 5 0 1 1 0 2H0v-2h12.1zm185.8 34a5 5 0 1 1 0-2h86.2a5 5 0 1 1 0 2h-86.2zM258 12.1a5 5 0 1 1-2 0V0h2v12.1zm-64 208a5 5 0 1 1-2 0v-54.2a5 5 0 1 1 2 0v54.2zm48-198.2V80h62v2h-64V21.9a5 5 0 1 1 2 0zm16 16V64h46v2h-48V37.9a5 5 0 1 1 2 0zm-128 96V208h16v12.1a5 5 0 1 1-2 0V210h-16v-76.1a5 5 0 1 1 2 0zm-5.9-21.9a5 5 0 1 1 0 2H114v48H85.9a5 5 0 1 1 0-2H112v-48h12.1zm-6.2 130a5 5 0 1 1 0-2H176v-74.1a5 5 0 1 1 2 0V242h-60.1zm-16-64a5 5 0 1 1 0-2H114v48h10.1a5 5 0 1 1 0 2H112v-48h-10.1zM66 284.1a5 5 0 1 1-2 0V274H50v30h-2v-32h18v12.1zM236.1 176a5 5 0 1 1 0 2H226v94h48v32h-2v-30h-48v-98h12.1zm25.8-30a5 5 0 1 1 0-2H274v44.1a5 5 0 1 1-2 0V146h-10.1zm-64 96a5 5 0 1 1 0-2H208v-80h16v-14h-42.1a5 5 0 1 1 0-2H226v18h-16v80h-12.1zm86.2-210a5 5 0 1 1 0 2H272V0h2v32h10.1zM98 101.9V146H53.9a5 5 0 1 1 0-2H96v-42.1a5 5 0 1 1 2 0zM53.9 34a5 5 0 1 1 0-2H80V0h2v34H53.9zm60.1 3.9V66H82v64H69.9a5 5 0 1 1 0-2H80V64h32V37.9a5 5 0 1 1 2 0zM101.9 82a5 5 0 1 1 0-2H128V37.9a5 5 0 1 1 2 0V82h-28.1zm16-64a5 5 0 1 1 0-2H146v44.1a5 5 0 1 1-2 0V18h-26.1zm102.2 270a5 5 0 1 1 0 2H98v14h-2v-16h124.1zM242 149.9V160h16v34h-16v62h48v48h-2v-46h-48v-66h16v-30h-16v-12.1a5 5 0 1 1 2 0zM53.9 18a5 5 0 1 1 0-2H64V2H48V0h18v18H53.9zm112 32a5 5 0 1 1 0-2H192V0h50v2h-48v48h-28.1zm-48-48a5 5 0 0 1-9.8-2h2.07a3 3 0 1 0 5.66 0H178v34h-18V21.9a5 5 0 1 1 2 0V32h14V2h-58.1zm0 96a5 5 0 1 1 0-2H137l32-32h39V21.9a5 5 0 1 1 2 0V66h-40.17l-32 32H117.9zm28.1 90.1a5 5 0 1 1-2 0v-76.51L175.59 80H224V21.9a5 5 0 1 1 2 0V82h-49.59L146 112.41v75.69zm16 32a5 5 0 1 1-2 0v-99.51L184.59 96H300.1a5 5 0 0 1 3.9-3.9v2.07a3 3 0 0 0 0 5.66v2.07a5 5 0 0 1-3.9-3.9H185.41L162 121.41v98.69zm-144-64a5 5 0 1 1-2 0v-3.51l48-48V48h32V0h2v50H66v55.41l-48 48v2.69zM50 53.9v43.51l-48 48V208h26.1a5 5 0 1 1 0 2H0v-65.41l48-48V53.9a5 5 0 1 1 2 0zm-16 16V89.41l-34 34v-2.82l32-32V69.9a5 5 0 1 1 2 0zM12.1 32a5 5 0 1 1 0 2H9.41L0 43.41V40.6L8.59 32h3.51zm265.8 18a5 5 0 1 1 0-2h18.69l7.41-7.41v2.82L297.41 50H277.9zm-16 160a5 5 0 1 1 0-2H288v-71.41l16-16v2.82l-14 14V210h-28.1zm-208 32a5 5 0 1 1 0-2H64v-22.59L40.59 194H21.9a5 5 0 1 1 0-2H41.41L66 216.59V242H53.9zm150.2 14a5 5 0 1 1 0 2H96v-56.6L56.6 162H37.9a5 5 0 1 1 0-2h19.5L98 200.6V256h106.1zm-150.2 2a5 5 0 1 1 0-2H80v-46.59L48.59 178H21.9a5 5 0 1 1 0-2H49.41L82 208.59V258H53.9zM34 39.8v1.61L9.41 66H0v-2h8.59L32 40.59V0h2v39.8zM2 300.1a5 5 0 0 1 3.9 3.9H3.83A3 3 0 0 0 0 302.17V256h18v48h-2v-46H2v42.1zM34 241v63h-2v-62H0v-2h34v1zM17 18H0v-2h16V0h2v18h-1zm273-2h14v2h-16V0h2v16zm-32 273v15h-2v-14h-14v14h-2v-16h18v1zM0 92.1A5.02 5.02 0 0 1 6 97a5 5 0 0 1-6 4.9v-2.07a3 3 0 1 0 0-5.66V92.1zM80 272h2v32h-2v-32zm37.9 32h-2.07a3 3 0 0 0-5.66 0h-2.07a5 5 0 0 1 9.8 0zM5.9 0A5.02 5.02 0 0 1 0 5.9V3.83A3 3 0 0 0 3.83 0H5.9zm294.2 0h2.07A3 3 0 0 0 304 3.83V5.9a5 5 0 0 1-3.9-5.9zm3.9 300.1v2.07a3 3 0 0 0-1.83 1.83h-2.07a5 5 0 0 1 3.9-3.9zM97 100a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-48 32a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm32 48a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-16 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm32-16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-32a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16 32a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm32 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-16-64a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16 96a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16-144a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 32a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16-32a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16-16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-96 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16-32a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm96 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-16-64a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16-16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-32 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-16 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-16 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-16 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM49 36a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-32 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm32 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM33 68a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16-48a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 240a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16 32a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-16-64a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-16-32a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm80-176a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-16-16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm32 48a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16-16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-32a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm112 176a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-16 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM17 180a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-32a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM17 84a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm32 64a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm16-16a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'%3E%3C/path%3E%3C/svg%3E");
+                color: #c9d1d9;
             }
 
             .fm-login-page .brand {
@@ -3934,11 +3984,12 @@ function fm_show_header_login()
                 overflow: hidden;
                 margin: 0 auto;
                 position: relative;
-                z-index: 1
+                z-index: 1;
+                color: #58a6ff;
             }
 
-            .fm-login-page .brand img {
-                width: 100%
+            .fm-login-page .brand svg {
+                width: 100%;
             }
 
             .fm-login-page .card-wrapper {
@@ -3946,32 +3997,51 @@ function fm_show_header_login()
             }
 
             .fm-login-page .card {
-                border-color: transparent;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, .05)
+                border-color: #30363d;
+                background-color: #161b22;
+                box-shadow: 0 4px 24px rgba(0, 0, 0, .5);
             }
 
             .fm-login-page .card-title {
                 margin-bottom: 1.5rem;
                 font-size: 24px;
                 font-weight: 400;
+                color: #c9d1d9;
             }
 
             .fm-login-page .form-control {
-                border-width: 2.3px
+                border: 1px solid #30363d;
+                background-color: #0d1117;
+                color: #c9d1d9;
+            }
+            
+            .fm-login-page .form-control:focus {
+                background-color: #0d1117;
+                color: #c9d1d9;
+                border-color: #58a6ff;
+                box-shadow: 0 0 0 0.25rem rgba(88, 166, 255, 0.25);
             }
 
             .fm-login-page .form-group label {
-                width: 100%
+                width: 100%;
+                color: #8b949e;
             }
 
             .fm-login-page .btn.btn-block {
-                padding: 12px 10px
+                padding: 12px 10px;
+                background-color: #238636;
+                border-color: #238636;
+            }
+            
+            .fm-login-page .btn.btn-block:hover {
+                background-color: #2ea043;
+                border-color: #2ea043;
             }
 
             .fm-login-page .footer {
                 margin: 20px 0;
-                color: #888;
-                text-align: center
+                color: #8b949e;
+                text-align: center;
             }
 
             @media screen and (max-width:425px) {
@@ -3984,49 +4054,36 @@ function fm_show_header_login()
 
             @media screen and (max-width:320px) {
                 .fm-login-page .card.fat {
-                    padding: 0
+                    padding: 0;
                 }
 
                 .fm-login-page .card.fat .card-body {
-                    padding: 15px
+                    padding: 15px;
                 }
             }
 
             .message {
                 padding: 4px 7px;
-                border: 1px solid #ddd;
-                background-color: #fff
+                border: 1px solid #30363d;
+                background-color: #161b22;
+                color: #c9d1d9;
             }
 
             .message.ok {
-                border-color: green;
-                color: green
+                border-color: rgba(46, 160, 67, 0.4);
+                color: #3fb950;
             }
 
             .message.error {
-                border-color: red;
-                color: red
+                border-color: rgba(248, 81, 73, 0.4);
+                color: #f85149;
             }
 
             .message.alert {
-                border-color: orange;
-                color: orange
+                border-color: rgba(210, 153, 34, 0.4);
+                color: #d29922;
             }
-
-            body.fm-login-page.theme-dark {
-                background-color: #2f2a2a;
-            }
-
-            .theme-dark svg g,
-            .theme-dark svg path {
-                fill: #ffffff;
-            }
-
-            .theme-dark .form-control {
-                color: #fff;
-                background-color: #403e3e;
-            }
-
+            
             .h-100vh {
                 min-height: 100vh;
             }
@@ -4074,14 +4131,13 @@ function fm_show_header_login()
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <meta name="description" content="Web based File Manager in PHP, Manage your files efficiently and easily with Tiny File Manager">
-        <meta name="author" content="CCP Programmers">
+
         <meta name="robots" content="noindex, nofollow">
         <meta name="googlebot" content="noindex">
         <?php if ($favicon_path) {
             echo '<link rel="icon" href="' . fm_enc($favicon_path) . '" type="image/png">';
         } ?>
-        <title><?php echo fm_enc(APP_TITLE) ?> | <?php echo (isset($_GET['view']) ? $_GET['view'] : ((isset($_GET['edit'])) ? $_GET['edit'] : "H3K")); ?></title>
+        <title><?php echo fm_enc(APP_TITLE) ?> | <?php echo (isset($_GET['view']) ? $_GET['view'] : ((isset($_GET['edit'])) ? $_GET['edit'] : "Home")); ?></title>
         <?php print_external('pre-jsdelivr'); ?>
         <?php print_external('pre-cloudflare'); ?>
         <?php print_external('css-bootstrap'); ?>
@@ -4089,10 +4145,24 @@ function fm_show_header_login()
         <?php if (FM_USE_HIGHLIGHTJS && isset($_GET['view'])): ?>
             <?php print_external('css-highlightjs'); ?>
         <?php endif; ?>
+        <!-- Plyr CSS -->
+        <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
         <script type="text/javascript">
             window.csrf = '<?php echo $_SESSION['token']; ?>';
         </script>
         <style>
+            :root {
+                --bs-body-bg: #0d1117;
+                --bs-body-color: #c9d1d9;
+                --bs-card-bg: #161b22;
+                --bs-border-color: #30363d;
+                --bs-table-bg: #0d1117;
+                --bs-table-color: #c9d1d9;
+                --bs-table-border-color: #30363d;
+                --bs-link-color: #58a6ff;
+                --bs-link-hover-color: #79c0ff;
+            }
+
             html {
                 -moz-osx-font-smoothing: grayscale;
                 -webkit-font-smoothing: antialiased;
@@ -4101,16 +4171,32 @@ function fm_show_header_login()
                 scroll-behavior: smooth;
             }
 
-            *,
-            *::before,
-            *::after {
-                box-sizing: border-box;
-            }
-
             body {
                 font-size: 15px;
-                color: #222;
-                background: #F7F7F7;
+                color: var(--bs-body-color);
+                background: var(--bs-body-bg);
+            }
+            
+            .card {
+                background-color: var(--bs-card-bg);
+                border-color: var(--bs-border-color);
+            }
+            
+            .table {
+                --bs-table-bg: var(--bs-body-bg);
+                --bs-table-color: var(--bs-body-color);
+                --bs-table-border-color: var(--bs-border-color);
+                color: var(--bs-table-color);
+                border-color: var(--bs-table-border-color);
+            }
+            
+            .table-bordered td, .table-bordered th {
+                border: 1px solid var(--bs-border-color);
+            }
+            
+            .table-hover tbody tr:hover {
+                color: var(--bs-table-color);
+                background-color: #161b22;
             }
 
             body.navbar-fixed {
@@ -4122,6 +4208,11 @@ function fm_show_header_login()
             a:visited,
             a:focus {
                 text-decoration: none !important;
+                color: var(--bs-link-color);
+            }
+            
+            a:hover {
+                color: var(--bs-link-hover-color);
             }
 
             .filename,
@@ -4132,11 +4223,13 @@ function fm_show_header_login()
 
             .navbar-brand {
                 font-weight: bold;
+                color: #c9d1d9 !important;
             }
 
             .nav-item.avatar a {
                 cursor: pointer;
                 text-transform: capitalize;
+                color: #c9d1d9 !important;
             }
 
             .nav-item.avatar a>i {
@@ -4150,6 +4243,9 @@ function fm_show_header_login()
             #search-addon {
                 font-size: 12px;
                 border-right-width: 0;
+                background-color: #161b22;
+                border-color: #30363d;
+                color: #c9d1d9;
             }
 
             .brl-0 {
@@ -4165,7 +4261,7 @@ function fm_show_header_login()
             }
 
             .bread-crumb {
-                color: #cccccc;
+                color: #8b949e;
                 font-style: normal;
             }
 
@@ -4174,7 +4270,7 @@ function fm_show_header_login()
             }
 
             #main-table .filename a {
-                color: #222222;
+                color: #c9d1d9;
             }
 
             .table td,
@@ -4194,10 +4290,294 @@ function fm_show_header_login()
             .table-sm th {
                 padding: .4rem;
             }
+            
+            /* Navbar */
+            .navbar {
+                background-color: #161b22 !important;
+                border-bottom: 1px solid #30363d;
+            }
+            
+            /* Modals */
+            .modal-content {
+                background-color: #161b22;
+                border: 1px solid #30363d;
+                color: #c9d1d9;
+            }
+            
+            .modal-header, .modal-footer {
+                border-color: #30363d;
+            }
+            
+            .close {
+                color: #c9d1d9;
+                text-shadow: none;
+            }
+            
+            /* Form controls */
+            .form-control, .form-select {
+                background-color: #0d1117;
+                border: 1px solid #30363d;
+                color: #c9d1d9;
+            }
+            
+            .form-control:focus, .form-select:focus {
+                background-color: #0d1117;
+                color: #c9d1d9;
+                border-color: #58a6ff;
+                box-shadow: 0 0 0 0.25rem rgba(88, 166, 255, 0.25);
+            }
+            
+            /* Dropdown */
+            .dropdown-menu {
+                background-color: #161b22;
+                border: 1px solid #30363d;
+            }
+            
+            .dropdown-item {
+                color: #c9d1d9;
+            }
+            
+            .dropdown-item:hover, .dropdown-item:focus {
+                background-color: #58a6ff;
+                color: #ffffff;
+            }
+            
+            /* Video Preview - 16:9 Constraint */
+            .preview-video {
+                display: block;
+                width: 100%;
+                margin: 0;
+                position: relative;
+            }
+            
+            /* Force 16:9 aspect ratio in normal view */
+            .preview-video .plyr {
+                width: 100%;
+                aspect-ratio: 16 / 9 !important;
+                background: #000;
+            }
 
-            .table-bordered td,
-            .table-bordered th {
-                border: 1px solid #f1f1f1;
+            /* Ensure video fits within the 16:9 container */
+            .preview-video .plyr .plyr__video-wrapper,
+            .preview-video .plyr video {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: contain !important;
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-touch-callout: none;
+            }
+
+            /* Fullscreen Overrides - Unset aspect ratio and fill screen */
+            .plyr--fullscreen-active,
+            :fullscreen,
+            :-webkit-full-screen,
+            :-moz-full-screen,
+            :-ms-fullscreen {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                height: 100vh !important;
+                width: 100vw !important;
+                background: #000 !important;
+                z-index: 2147483647 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                aspect-ratio: unset !important; /* Remove 16:9 constraint */
+            }
+
+            .plyr--fullscreen-active .plyr__video-wrapper,
+            :fullscreen .plyr__video-wrapper,
+            :-webkit-full-screen .plyr__video-wrapper,
+            :-moz-full-screen .plyr__video-wrapper {
+                height: 100% !important;
+                width: 100% !important;
+                background: #000 !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                transform: none !important;
+                aspect-ratio: unset !important;
+            }
+
+            .plyr--fullscreen-active video,
+            :fullscreen video,
+            :-webkit-full-screen video,
+            :-moz-full-screen video {
+                width: 100% !important;
+                height: 100% !important;
+                max-width: none !important;
+                max-height: none !important;
+                min-width: 0 !important;
+                min-height: 0 !important;
+                margin: auto !important;
+                object-fit: contain !important;
+                transform: none !important;
+                border: none !important;
+                display: block !important;
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-touch-callout: none;
+            }
+
+            /* Ensure Play/Pause button in controls is always visible */
+            /* .plyr__controls .plyr__control[data-plyr="play"] {
+                display: block !important;
+            } */
+
+            /* Reduce volume bar length */
+            .plyr__volume input[type=range] {
+                max-width: 50px !important; /* Default is usually around 100px or auto */
+                min-width: 30px !important;
+            }
+            /* Mobile Seek Feedback */
+            .seek-feedback {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                background: rgba(0, 0, 0, 0.6);
+                color: white;
+                padding: 10px 20px;
+                border-radius: 20px;
+                font-size: 16px;
+                font-weight: bold;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.3s;
+                z-index: 2147483648; /* Above fullscreen video */
+            }
+            .seek-feedback.left { left: 10%; }
+            .seek-feedback.right { right: 10%; }
+            .seek-feedback.show { opacity: 1; }
+
+            /* 2x Speed Feedback */
+            .speed-feedback {
+                position: absolute;
+                top: 5%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 0.6);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: bold;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.2s;
+                z-index: 2147483648;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+            .speed-feedback.show { opacity: 1; }
+
+            /* Resume Playback Prompt */
+            .resume-prompt {
+                position: absolute;
+                bottom: 60px; /* Above controls */
+                left: 20px;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 15px;
+                border-radius: 8px;
+                z-index: 20; /* Above video, below controls */
+                display: none;
+                animation: fadeIn 0.3s;
+                font-family: inherit;
+                max-width: 300px;
+            }
+            .resume-prompt p {
+                margin: 0 0 10px 0;
+                font-size: 14px;
+            }
+            .resume-prompt .btn-group {
+                display: flex;
+                gap: 10px;
+            }
+            .resume-prompt button {
+                padding: 5px 10px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            .resume-prompt .btn-resume {
+                background: #3498db;
+                color: white;
+            }
+            .resume-prompt .btn-dismiss {
+                background: transparent;
+                color: #ccc;
+                border: 1px solid #666;
+            }
+            .resume-prompt .btn-dismiss:hover {
+                background: rgba(255,255,255,0.1);
+                color: white;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+            /* Fix text overflow in list items */
+            .list-group-item {
+                word-break: break-word;
+                overflow-wrap: anywhere;
+            }
+
+            /* Context Menu */
+            .context-menu-list {
+                position: absolute;
+                display: inline-block;
+                min-width: 13em;
+                max-width: 26em;
+                padding: .25em 0;
+                margin: .3em;
+                font-family: inherit;
+                font-size: inherit;
+                list-style-type: none;
+                background: #fff;
+                border: 1px solid #bebebe;
+                border-radius: .2em;
+                -webkit-box-shadow: 0 2px 5px rgba(0, 0, 0, .5);
+                box-shadow: 0 2px 5px rgba(0, 0, 0, .5);
+                z-index: 3;
+            }
+
+            .preview-video {
+                width: 100%;
+                max-width: 800px;
+                margin: 0 auto;
+                display: block;
+            }
+            
+            .preview-video video {
+                width: 100%;
+                height: auto;
+            }
+            
+            .context-menu-item {
+                background-color: #161b22 !important;
+                color: #c9d1d9 !important;
+            }
+            
+            .context-menu-item.context-menu-hover {
+                background-color: #58a6ff !important;
+                color: #ffffff !important;
+            }
+            
+            /* Footer */
+            footer {
+                background-color: #161b22;
+                border-top: 1px solid #30363d;
+                color: #8b949e;
             }
 
             .hidden {
@@ -4308,14 +4688,9 @@ function fm_show_header_login()
                 margin-bottom: 10px
             }
 
-            .preview-video video {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                left: 0;
-                top: 0;
-                background: #000
-            }
+            /* Ensure video fits within the container on page */
+            /* Fix vertical video scaling on page */
+
 
             .compact-table {
                 border: 0;
@@ -5559,6 +5934,214 @@ function fm_show_header_login()
             </script>
         <?php endif; ?>
         <div id="snackbar"></div>
+        <div id="snackbar"></div>
+        <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const player = new Plyr('#player', {
+                    layoutControls: true,
+                    autopause: true,
+                    seekTime: 10,
+                    keyboard: { focused: true, global: true },
+                    controls: ['play-large', 'play', 'rewind', 'fast-forward', 'progress', 'current-time', 'duration', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen']
+                });
+                window.player = player;
+
+                // Resume Playback Logic
+                player.on('ready', () => {
+                    const videoId = 'tfm_video_' + encodeURIComponent(player.source);
+                    const savedTime = localStorage.getItem(videoId);
+                    const container = player.elements.container;
+
+                    if (savedTime && parseFloat(savedTime) > 5) {
+                        const time = parseFloat(savedTime);
+                        const minutes = Math.floor(time / 60);
+                        const seconds = Math.floor(time % 60);
+                        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                        // Create prompt
+                        const prompt = document.createElement('div');
+                        prompt.className = 'resume-prompt';
+                        prompt.innerHTML = `
+                            <p>Resume from ${timeString}?</p>
+                            <div class="btn-group">
+                                <button class="btn-resume">Resume</button>
+                                <button class="btn-dismiss">Start Over</button>
+                            </div>
+                        `;
+                        container.appendChild(prompt);
+                        prompt.style.display = 'block';
+
+                        // Handle clicks
+                        prompt.querySelector('.btn-resume').addEventListener('click', () => {
+                            // Ensure we set time after play starts to avoid reset
+                            const setTime = () => {
+                                player.currentTime = time;
+                                player.off('playing', setTime);
+                            };
+                            
+                            player.on('playing', setTime);
+                            player.play().then(() => {
+                                // Fallback if already playing or promise resolves fast
+                                if (Math.abs(player.currentTime - time) > 1) {
+                                    player.currentTime = time;
+                                }
+                            }).catch(() => {});
+                            
+                            prompt.remove();
+                        });
+
+                        prompt.querySelector('.btn-dismiss').addEventListener('click', () => {
+                            localStorage.removeItem(videoId);
+                            player.currentTime = 0;
+                            player.play();
+                            prompt.remove();
+                        });
+
+                        // Auto-hide after 10s if no interaction
+                        setTimeout(() => {
+                            if (document.body.contains(prompt)) prompt.remove();
+                        }, 10000);
+                    }
+
+                    // Save progress
+                    player.on('timeupdate', () => {
+                        // Throttle saving? localStorage is fast enough for this usually
+                        if (player.currentTime > 5) {
+                            localStorage.setItem(videoId, player.currentTime);
+                        }
+                    });
+
+                    // Clear on end
+                    player.on('ended', () => {
+                        localStorage.removeItem(videoId);
+                    });
+                });
+
+                // Mobile Double-Tap to Seek
+                player.on('ready', () => {
+                    const container = player.elements.container;
+                    const wrapper = container.querySelector('.plyr__video-wrapper') || container;
+                    
+                    // Create feedback elements
+                    const feedbackLeft = document.createElement('div');
+                    feedbackLeft.className = 'seek-feedback left';
+                    feedbackLeft.innerHTML = '« 10s';
+                    container.appendChild(feedbackLeft);
+
+                    const feedbackRight = document.createElement('div');
+                    feedbackRight.className = 'seek-feedback right';
+                    feedbackRight.innerHTML = '10s »';
+                    container.appendChild(feedbackRight);
+
+                    const speedFeedback = document.createElement('div');
+                    speedFeedback.className = 'speed-feedback';
+                    speedFeedback.innerHTML = '<span>⚡</span> 2x Speed';
+                    container.appendChild(speedFeedback);
+
+                    let lastTap = 0;
+                    let feedbackTimeout;
+                    let holdTimeout;
+                    let isHolding = false;
+                    let originalSpeed = 1;
+
+                    // Pointer Events for Unified Handling
+                    wrapper.addEventListener('pointerdown', (e) => {
+                        if (!e.isPrimary) return;
+
+                        holdTimeout = setTimeout(() => {
+                            if (!player.playing) return;
+                            isHolding = true;
+                            originalSpeed = player.speed;
+                            player.speed = 2;
+                            speedFeedback.classList.add('show');
+                        }, 300);
+                    });
+
+                    wrapper.addEventListener('pointerup', (e) => {
+                        clearTimeout(holdTimeout);
+
+                        if (isHolding) {
+                            player.speed = originalSpeed;
+                            speedFeedback.classList.remove('show');
+                            isHolding = false;
+                            e.preventDefault(); // Prevent click
+                            return;
+                        }
+
+                        // Double Tap Detection (Touch Only for Seek)
+                        if (e.pointerType === 'touch') {
+                            const currentTime = new Date().getTime();
+                            const tapLength = currentTime - lastTap;
+                            
+                            if (tapLength < 300 && tapLength > 0) {
+                                const rect = wrapper.getBoundingClientRect();
+                                const x = e.clientX - rect.left;
+                                const width = rect.width;
+                                
+                                // Only intercept if in seek zones
+                                if (x < width * 0.35 || x > width * 0.65) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.stopImmediatePropagation();
+                                    
+                                    // Set flag to block subsequent clicks (fixes fullscreen conflict)
+                                    wasHolding = true; 
+                                    setTimeout(() => wasHolding = false, 300); // Extended timeout
+
+                                    if (feedbackTimeout) clearTimeout(feedbackTimeout);
+                                    feedbackLeft.classList.remove('show');
+                                    feedbackRight.classList.remove('show');
+
+                                    if (x < width * 0.35) {
+                                        player.rewind(10);
+                                        feedbackLeft.classList.add('show');
+                                        feedbackTimeout = setTimeout(() => feedbackLeft.classList.remove('show'), 600);
+                                    } else {
+                                        player.forward(10);
+                                        feedbackRight.classList.add('show');
+                                        feedbackTimeout = setTimeout(() => feedbackRight.classList.remove('show'), 600);
+                                    }
+                                }
+                            }
+                            lastTap = currentTime;
+                        }
+                    });
+
+                    wrapper.addEventListener('pointercancel', (e) => {
+                        clearTimeout(holdTimeout);
+                        if (isHolding) {
+                            player.speed = originalSpeed;
+                            speedFeedback.classList.remove('show');
+                            isHolding = false;
+                        }
+                    });
+
+                    // Block click events if they follow a hold or double tap
+                    wrapper.addEventListener('click', (e) => {
+                        if (wasHolding) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.stopImmediatePropagation();
+                        }
+                    }, { capture: true });
+
+                    // Aggressively block double clicks in seek zones
+                    wrapper.addEventListener('dblclick', (e) => {
+                        const rect = wrapper.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const width = rect.width;
+                        
+                        // If in seek zones, kill the event
+                        if (x < width * 0.35 || x > width * 0.65) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.stopImmediatePropagation();
+                        }
+                    }, { capture: true });
+                });
+            });
+        </script>
     </body>
 
     </html>
@@ -5575,7 +6158,8 @@ function fm_show_header_login()
         global $lang;
 
     // English Language
-    $tr['en']['AppName']        = 'Tiny File Manager';      $tr['en']['AppTitle']           = 'File Manager';
+    // English Language
+    $tr['en']['AppName']        = 'Manager';                $tr['en']['AppTitle']           = 'Manager';
     $tr['en']['Login']          = 'Sign in';                $tr['en']['Username']           = 'Username';
     $tr['en']['Password']       = 'Password';               $tr['en']['Logout']             = 'Sign Out';
     $tr['en']['Move']           = 'Move';                   $tr['en']['Copy']               = 'Copy';
